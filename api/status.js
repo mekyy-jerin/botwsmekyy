@@ -12,15 +12,12 @@ export default async function handler(req, res) {
     const state = attrs?.current_state || "unknown";
 
     send(res, 200, {
+      ok: true,
       running: state === "running",
       connected: state === "running",
       state,
       uptime: 0,
-      stats: {
-        messages: 0,
-        commands: 0,
-        groups: 0
-      },
+      stats: { messages: 0, commands: 0, groups: 0 },
       resources: {
         cpu: Number(r.cpu_absolute || 0),
         memory: Number(r.memory_bytes || 0),
@@ -31,6 +28,13 @@ export default async function handler(req, res) {
       }
     });
   } catch (error) {
-    send(res, error.status || 500, { error: error.message });
+    // Keep this diagnostic response at 200 temporarily so the browser can display
+    // the upstream Pterodactyl error instead of hiding it behind Vercel's 500 page.
+    send(res, 200, {
+      ok: false,
+      diagnostic: true,
+      error: error.message || "Unknown Pterodactyl API error",
+      upstreamStatus: error.status || null
+    });
   }
 }
