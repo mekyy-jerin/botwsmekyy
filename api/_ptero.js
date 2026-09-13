@@ -1,7 +1,11 @@
 export function config() {
-  const base = String(process.env.PTERODACTYL_URL || "").replace(/\/+$/, "");
+  let base = String(process.env.PTERODACTYL_URL || "").replace(/\/+$/, "");
   const token = process.env.PTERODACTYL_API_KEY;
   const server = process.env.SERVER_ID;
+
+  // Arqonara's official panel/API hostname is panel.arqonara.com.
+  // Accept the older typo automatically so the Vercel env var does not break the bot.
+  base = base.replace(/^https:\/\/panel\.argonara\.com$/i, "https://panel.arqonara.com");
 
   if (!base || !token || !server) {
     throw new Error("Missing PTERODACTYL_URL, PTERODACTYL_API_KEY, or SERVER_ID");
