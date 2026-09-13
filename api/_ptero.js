@@ -28,6 +28,12 @@ export async function ptero(path, options = {}) {
   if (!response.ok) {
     const details = data?.errors?.map((item) => item.detail).filter(Boolean) || [];
     const message = details.join("; ") || data?.message || text || `HTTP ${response.status}`;
+    console.error("Pterodactyl API error", {
+      path,
+      status: response.status,
+      statusText: response.statusText,
+      body: text
+    });
     const error = new Error(`Pterodactyl API ${response.status}: ${message}`);
     error.status = response.status;
     error.responseBody = text;
