@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>wa-bot-mekyy — Control</title><link rel="stylesheet" href="style.css"><script src="app.js" defer></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="side-brand"><div class="brand-mark">W</div><div><strong>wa-bot</strong><span>mekyy</span></div></div>
+    <div class="side-label">WORKSPACE</div>
+    <nav class="side-nav">
+      <a class="active" href="index.html"><span>01</span>Overview</a>
+      <a href="revealed.html"><span>02</span>Revealed</a>
+      <a href="stickers.html"><span>03</span>Stickers</a>
+      <a href="upscale.html"><span>04</span>Upscale</a>
+    </nav>
+    <div class="sidebar-bottom"><div class="mini-status"><i id="sideDot"></i><div><small>BOT</small><b id="sideStatus">Offline</b></div></div><div class="side-version">Control panel · v1</div></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><p class="kicker">CONTROL / OVERVIEW</p><h1>Bot overview</h1></div>
+      <div class="top-actions"><span id="badge" class="status-chip">OFFLINE</span><button id="refreshQrBtn" class="quiet">Refresh QR</button></div>
+    </header>
+
+    <section class="hero-grid">
+      <div class="connection-panel">
+        <div class="panel-head"><div><span class="eyebrow">WHATSAPP CONNECTION</span><h2 id="status">Offline</h2></div><span id="dot" class="status-dot offline"></span></div>
+        <p id="qrHelp" class="panel-copy">Start the bot to create a WhatsApp pairing session. Your existing linked session remains in <code>auth</code>.</p>
+        <div class="action-row"><button id="startBtn" class="primary">Start bot</button><button id="stopBtn" class="secondary-action">Stop bot</button></div>
+        <div class="connection-meta"><span>Session</span><strong id="sessionState">Not connected</strong><span>Uptime</span><strong id="uptime">00h 00m 00s</strong></div>
+      </div>
+      <div class="qr-panel"><div class="qr-head"><span>PAIRING</span><small>Live</small></div><div class="qr-frame" id="qrFrame"><div class="qr-placeholder"><span class="qr-placeholder-icon">+</span><strong id="qrState">QR unavailable</strong><small>Start the bot to request a code.</small></div></div></div>
+    </section>
+
+    <section class="section-head"><div><span class="eyebrow">ACTIVITY</span><h2>At a glance</h2></div><span class="muted">Updated automatically</span></section>
+    <section class="metric-grid">
+      <div class="metric"><span>MESSAGES</span><strong id="messageCount">0</strong><small>received by the bot</small></div>
+      <div class="metric"><span>COMMANDS</span><strong id="commandCount">0</strong><small>commands processed</small></div>
+      <div class="metric"><span>GROUPS</span><strong id="groupCount">0</strong><small>active group contexts</small></div>
+      <div class="metric health"><span>SERVICE</span><strong id="serviceState">Offline</strong><small id="runningBadge">Bot process stopped</small></div>
+    </section>
+
+    <section class="lower-grid">
+      <div class="wide-panel"><div class="section-head compact"><div><span class="eyebrow">TOOLS</span><h2>Bot workspace</h2></div></div>
+        <div class="tool-list">
+          <a href="revealed.html"><span class="tool-index">01</span><div><b>Revealed images</b><small>Browse images saved from reveal commands.</small></div><em>↗</em></a>
+          <a href="stickers.html"><span class="tool-index">02</span><div><b>Sticker collection</b><small>Open saved sticker categories and outputs.</small></div><em>↗</em></a>
+          <a href="upscale.html"><span class="tool-index">03</span><div><b>Upscaled images</b><small>Review HD results saved by the bot.</small></div><em>↗</em></a>
+        </div>
+      </div>
+      <aside class="guide-panel"><span class="eyebrow">NOTES</span><h2>Keep the session intact</h2><p>Do not remove the <code>auth</code> folder if you want the WhatsApp login to survive a restart.</p><div class="rule"></div><div class="guide-line"><span>01</span>Start the bot</div><div class="guide-line"><span>02</span>Scan the pairing code</div><div class="guide-line"><span>03</span>Leave the session files untouched</div></aside>
+    </section>
+  </main>
+</div>
+<script>
+(() => {
+  let busy=false, qrUrl=null, timer;
+  const $=id=>document.getElementById(id);
+  const uptime=s=>{s=Math.max(0,Number(s)||0);return `${String(Math.floor(s/3600)).padStart(2,'0')}h ${String(Math.floor(s%3600/60)).padStart(2,'0')}m ${String(s%60).padStart(2,'0')}s`};
+  const stats=s=>{ $('messageCount').textContent=Number(s?.messages||0).toLocaleString(); $('commandCount').textContent=Number(s?.commands||0).toLocaleString(); $('groupCount').textContent=Number(s?.groups||0).toLocaleString(); };
+  function state(d){const on=!!d.connected, run=!!d.running; $('dot').className='status-dot '+(on?'online':run?'starting':'offline'); $('sideDot').className=on?'online':run?'starting':'offline'; const label=on?'Connected':run?(d.status==='reconnecting'?'Reconnecting':'Starting'):'Offline'; $('status').textContent=label; $('sideStatus').textContent=label; $('sessionState').textContent=on?'Linked session':run?'Connecting':'Not connected'; $('serviceState').textContent=on?'Online':run?'Starting':'Offline'; $('badge').textContent=on?'CONNECTED':run?'STARTING':'OFFLINE'; $('runningBadge').textContent=on?'Bot process running':run?'Bot process starting':'Bot process stopped';}
+  async function qr(d){const frame=$('qrFrame'); if(d?.connected){frame.innerHTML='<div class="qr-placeholder connected"><span class="connected-icon">✓</span><strong>WhatsApp connected</strong><small>Your linked session is active.</small></div>'; $('qrHelp').textContent='The bot is connected and ready to respond in WhatsApp.'; $('refreshQrBtn').disabled=true; return;} $('refreshQrBtn').disabled=false; try{const r=await fetch('/api/qr?t='+Date.now(),{cache:'no-store'}); if(!r.ok)throw 0; const u=URL.createObjectURL(await r.blob()); if(qrUrl)URL.revokeObjectURL(qrUrl);qrUrl=u;frame.innerHTML=`<img class="qr-image" src="${u}" alt="WhatsApp pairing QR code">`; $('qrHelp').textContent='Open WhatsApp → Linked devices and scan the code.';}catch{$('qrHelp').textContent='Start the bot to create a pairing code.';}}
+  async function update(){if(busy)return; try{const r=await fetch('/api/status?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;const d=await r.json();state(d);stats(d.stats);$('uptime').textContent=uptime(d.uptime);await qr(d);}catch(e){console.error(e)}}
+  async function action(id,url,label){const b=$(id);b.disabled=true;b.textContent=label+'…';try{await fetch(url,{method:'POST'});}finally{b.disabled=false;b.textContent=label;update();}}
+  $('startBtn').onclick=()=>action('startBtn','/api/start','Start bot'); $('stopBtn').onclick=()=>action('stopBtn','/api/stop','Stop bot'); $('refreshQrBtn').onclick=()=>update(); update(); timer=setInterval(update,3000); addEventListener('beforeunload',()=>{clearInterval(timer);if(qrUrl)URL.revokeObjectURL(qrUrl)});
+})();
+</script>
+</body></html>
