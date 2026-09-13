@@ -18,9 +18,13 @@ export async function ptero(path, options = {}) {
   const response = await fetch(`${base}${path}`, {
     ...options,
     headers: {
-      Accept: "Application/vnd.pterodactyl.v1+json",
+      Accept: "Application/vnd.pterodactyl.v1+json, application/json;q=0.9, */*;q=0.8",
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/153.0.0.0 Safari/537.36",
+      "Accept-Language": "en-US,en;q=0.9",
+      Referer: "https://panel.arqonara.com/",
+      Origin: "https://panel.arqonara.com",
       ...(options.headers || {})
     }
   });
